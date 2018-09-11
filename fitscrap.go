@@ -10,8 +10,17 @@ import (
 )
 
 type pageInfo struct {
-	Headings map[string]int
-	Excerpt  map[string]int
+	Heading map[string]int
+	Excerpt map[string]int
+}
+
+type pages struct {
+	articles []pageInfo
+}
+
+func (box *pages) AddItem(item MyBoxItem) []MyBoxItem {
+	box.Items = append(box.Items, item)
+	return box.Items
 }
 
 func main() {
@@ -20,7 +29,10 @@ func main() {
 }
 
 func crawl(w http.ResponseWriter, r *http.Request) {
-	scrappedPage := &pageInfo{Headings: make(map[string]int), Excerpt: make(map[string]int)}
+
+	scrappedPage := &pageInfo{Heading: make(map[string]int), Excerpt: make(map[string]int)}
+
+	pages := make([]pageInfo, 20)
 
 	url := "https://hackernoon.com/"
 
@@ -41,8 +53,10 @@ func crawl(w http.ResponseWriter, r *http.Request) {
 		excerpt := e.ChildText("div.u-contentSansThin")
 
 		if heading != "" && excerpt != "" {
-			scrappedPage.Headings[heading]++
+			scrappedPage.Heading[heading]++
 			scrappedPage.Excerpt[excerpt]++
+
+			pages = append({Heading: "ef", Excerpt: "fe"})
 
 			jsonOutput, err := json.Marshal(scrappedPage)
 
