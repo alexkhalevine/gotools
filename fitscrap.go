@@ -4,19 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/gocolly/colly"
 )
 
 type pageInfo struct {
-	StatusCode int
-	Headings   map[string]int
-	Excerpt    map[string]int
+	Headings map[string]int
+	Excerpt  map[string]int
 }
 
 func main() {
-	fmt.Println("Visiting")
+	http.HandleFunc("/", crawl)
+	http.ListenAndServe(":3000", nil)
+}
 
+func crawl(w http.ResponseWriter, r *http.Request) {
 	scrappedPage := &pageInfo{Headings: make(map[string]int), Excerpt: make(map[string]int)}
 
 	url := "https://hackernoon.com/"
@@ -26,13 +29,11 @@ func main() {
 	)
 
 	collector.OnResponse(func(r *colly.Response) {
-		log.Println("response received", r.StatusCode)
-		scrappedPage.StatusCode = r.StatusCode
+		log.Println("response received")
 	})
 
 	collector.OnError(func(r *colly.Response, err error) {
-		log.Println("error:", r.StatusCode, err)
-		scrappedPage.StatusCode = r.StatusCode
+		log.Println("error:", err)
 	})
 
 	collector.OnHTML(".js-trackedPost a", func(e *colly.HTMLElement) {
@@ -43,9 +44,6 @@ func main() {
 			scrappedPage.Headings[heading]++
 			scrappedPage.Excerpt[excerpt]++
 
-			// fmt.Println("Extracted headline:", heading)
-			// fmt.Println("Extracted exerpt:", excerpt)
-
 			jsonOutput, err := json.Marshal(scrappedPage)
 
 			if err != nil {
@@ -53,9 +51,12 @@ func main() {
 				return
 			}
 
-			fmt.Println(string(jsonOutput))
+			// fmt.Println(string(jsonOutput))
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonOutput)
 		}
 	})
 
 	collector.Visit(url)
+
 }
